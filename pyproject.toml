@@ -1,0 +1,33 @@
+[project]
+name = "cached-dataset"
+version = "0.1.0"
+description = "A pytorch dataset that will load and cache another dataset into disk or memory."
+authors = [
+    {name = "raideno56",email = "nadirkichou@hotmail.fr"}
+]
+maintainers = [
+    {name = "raideno56",email = "nadirkichou@hotmail.fr"}
+]
+homepage = "https://raideno.github.io/cached-dataset/"
+documentation = "https://raideno.github.io/cached-dataset/"
+repository = "https://github.com/raideno/cached-dataset"
+keywords = ["pytorch-cached-dataset", "pytorch", "cached-dataset"]
+readme = "README.md"
+
+requires-python = ">=3.12"
+dependencies = [
+    "pandas (>=2.2.3,<3.0.0)",
+    "pillow (>=11.1.0,<12.0.0)",
+    "opencv-python (>=4.11.0.86,<5.0.0.0)"
+]
+packages = [
+    {include = "cached_dataset", from = "."}
+]
+include = [
+    { path = "README.md", format = "sdist" },
+    { path = "README.md", format = "wheel" },
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
