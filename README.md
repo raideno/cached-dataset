@@ -7,3 +7,9 @@ The idea is that when you have datasets with computation hungry transformations,
 Depending on the context this can save a lot of time, but at the cost of memory consumption.
 
 The package supports multi processing & is thus able to apply and cache your transformations as fast as possible.
+
+## Installation
+
+```
+pip install git+https://github.com/raideno/cached-dataset.git
+```
