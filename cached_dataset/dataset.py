@@ -136,10 +136,10 @@ class DiskCachedDataset(torch.utils.data.Dataset):
             pathlib.Path(base_path).mkdir(parents=True, exist_ok=True)
             
             return DiskCachedDataset.cache_dataset(
-                dataset,
-                base_path,
-                num_workers,
-                callback,
+                dataset=dataset,
+                base_path=base_path,
+                num_workers=num_workers,
+                callback=callback,
                 indices_to_cache=missing_indices
             )
         else:
