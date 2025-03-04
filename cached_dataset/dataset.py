@@ -3,12 +3,18 @@ import tqdm
 import torch
 import pathlib
 
+from typing import Callable
+
+# NOTE: (already_cached_len, total_len)
+Callback = Callable[[tuple[int, int]], None]
+
 def _save_sample_worker(args):
     dataset, base_path, callback, index = args
     sample = dataset[index]
     file_path = os.path.join(base_path, f"{index}.pt")
     torch.save(sample, file_path)
     if callback is not None:
+        # TODO: fix as it should be (index, len(indices_to_cache)) to be more accurate
         callback((index, len(dataset)))
     return index
 
@@ -79,7 +85,7 @@ class DiskCachedDataset(torch.utils.data.Dataset):
         self.transform = new_transform
         
     @staticmethod
-    def cache_dataset(dataset, base_path, indices_to_cache=None, num_workers=0, callback=None):
+    def cache_dataset(dataset, base_path, indices_to_cache=None, num_workers=0, callback:Callback=None):
         if indices_to_cache is None:
             indices_to_cache = range(len(dataset))
             
@@ -91,12 +97,15 @@ class DiskCachedDataset(torch.utils.data.Dataset):
             with mp.Pool(processes=num_workers) as pool:
                 list(pool.imap(_save_sample_worker, args_list))
         else:
-            for sample_index in indices_to_cache:
+            for i, sample_index in enumerate(indices_to_cache):
                 sample = dataset[sample_index]
                 file_path = os.path.join(base_path, f"{sample_index}.pt")
                 torch.save(sample, file_path)
                 if callback is not None:
-                    callback((sample_index, len(dataset)))
+                    already_cached_len = len(dataset) - len(indices_to_cache) - (i + 1)
+                    total_len = len(dataset)
+                    
+                    callback((already_cached_len, total_len))
         
         return DiskCachedDataset(base_path)
     
@@ -128,7 +137,7 @@ class DiskCachedDataset(torch.utils.data.Dataset):
         return DiskCachedDataset.get_missing_files(dataset, base_path)[0]
             
     @staticmethod
-    def load_dataset_or_cache_it(dataset, base_path, num_workers=0, callback=None):
+    def load_dataset_or_cache_it(dataset, base_path, num_workers=0, callback:Callback=None):
         path_already_exist = os.path.exists(base_path)
         missing_indices = range(len(dataset)) if not path_already_exist else DiskCachedDataset.get_missing_files(dataset, base_path)[2]
         
