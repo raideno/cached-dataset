@@ -16,60 +16,46 @@ def _filter_ds_store(file_name):
 def _better_listdir(path):
     return list(filter(_filter_ds_store, os.listdir(path)))
 
-DEFAULT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
 # SOURCE / INSPIRATION: https://discuss.pytorch.org/t/best-practice-to-cache-the-entire-dataset-during-first-epoch/19608/2
 class DiskCachedDataset(torch.utils.data.Dataset):
-    def __init__(self, base_path, preload=False, item_size_estimator=None, item_size_estimator_batch_size=16, device=None, transform=None, verbose=False):
-        """"
-        Warning: setting preload=True will try to load all the dataset into memory. Depending on the dataset size and your computer's memory size this might or might not be possible and can lead to the crash of your notebook.
-        Note: when item_size_estimator is None, the DiskCachedDataset will attempt to use some predefined / popular item_size_estimator if possible and will throw an error if it is not possible to do so.
-        Note: the item_size_estimator will be un on multiple items and the average will be taken to get a better estimate of the item size. THe number of items on which the item_size_estimator will be run is determined by the item_size_estimator_batch_size parameter.
-        """
+    """
+    A PyTorch Dataset that efficiently caches samples to disk for faster subsequent loading.
+
+    This class is designed to store dataset samples as `.pt` files in a specified directory.
+    If the dataset is not already cached, it will save the samples to disk during the first
+    usage or on demand. Subsequent accesses load data directly from disk, improving
+    performance when dealing with large datasets that do not fit into memory.
+
+    Args:
+        base_path (str): Path to the directory where the dataset is cached.
+        transform (callable, optional): Transformation function applied to the dataset samples.
+        verbose (bool, optional): Whether to display progress during dataset caching.
+
+    Methods:
+        cache_dataset: Saves the dataset samples to disk.
+        verify_if_correctly_cached: Checks if the dataset is fully cached.
+        get_missing_files: Identifies missing files in the cached dataset.
+        is_there_missing_files: Returns whether any cached files are missing.
+        load_dataset_or_cache_it: Loads the dataset from disk or caches it if needed.
+        set_transform: Sets a new transformation function for the dataset.
+    """
+    def __init__(self, base_path, transform=None, verbose=False):
         self.base_path = base_path
         self.files_name = _better_listdir(self.base_path)
         self.transform = transform
-        self.device = device if device is not None else DEFAULT_DEVICE
-        self.preload = preload
         self.verbose = verbose
-        
-        self.items = None
-        self.preloaded = False
-        
-        if self.preload:
-            self.items = self.__preload_items()
-            self.preloaded = True
         
     def __len__(self):
         return len(self.files_name)
     
-    # QUESTION: should we move the elements to the device memory like now or is it a bad idea and it would be better to move them in the training loop ?
-    # What is the impact ?
-    
-    # TODO: when computing the memory, do so in the correct device
-    # TODO: do something to pre-check the computer memory size and tell whether it is possible to load the dataset or not 
-    def __preload_items(self):
-        items = []
-        
-        with tqdm.tqdm(iterable=self.files_name, desc="[preloading-dataset]", disable=not self.verbose) as progress_bar:
-            for file_name in progress_bar:
-                file_path = os.path.join(self.base_path, file_name)
-                item = torch.load(file_path, map_location=self.device, weights_only=False)
-                items.append(item)
-            
-        return items
-        
     def __getitem__(self, index):
-        if self.preload and self.preloaded:
-            inputs, label = self.items[index]
-        else:
-            file_name = self.files_name[index]
-            file_path = os.path.join(self.base_path, file_name)
-            
-            inputs, label = torch.load(file_path, weights_only=False)
-            
-            if self.transform is not None:
-                inputs = self.transform(inputs)
+        file_name = self.files_name[index]
+        file_path = os.path.join(self.base_path, file_name)
+        
+        inputs, label = torch.load(file_path, weights_only=False)
+        
+        if self.transform is not None:
+            inputs = self.transform(inputs)
             
         return inputs, label
         

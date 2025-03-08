@@ -34,3 +34,5 @@ cached_dataset = DiskCachedDataset.load_dataset_or_cache_it(
 for sample in cached_dataset:
     print(f"[sample-{i}]: {sample}")
 ```
+
+**Note:** for now the only available caching location is on disk, memory isn't supported yet.
