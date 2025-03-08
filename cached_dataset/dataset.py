@@ -35,6 +35,7 @@ class DiskCachedDataset(torch.utils.data.Dataset):
     Args:
         base_path (str): Path to the directory where the dataset is cached.
         transform (callable, optional): Transformation function applied to the dataset samples. Default is `None`.
+        ids (list[int], optional): List of sample indices to consider for load. If `None`, all samples will be loaded. Default is `None`.
         verbose (bool, optional): Whether to display progress during dataset caching. Default is `False`.
 
     Methods:
@@ -45,12 +46,16 @@ class DiskCachedDataset(torch.utils.data.Dataset):
         load_dataset_or_cache_it: Loads the dataset from disk or caches it if needed.
         set_transform: Sets a new transformation function for the dataset.
     """
-    def __init__(self, base_path, transform=None, verbose=False):
+    def __init__(self, base_path, transform=None, ids=None, verbose=False):
         self.base_path = base_path
         self.transform = transform
         self.verbose = verbose
+        self.ids = ids
         
         self.files_names = _better_listdir(self.base_path)
+        
+        if self.ids is not None:
+            self.files_names = [f"{id}.{FILE_EXTENSION}" for id in self.ids]
         
     def __len__(self):
         return len(self.files_names)
