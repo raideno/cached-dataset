@@ -13,3 +13,24 @@ The package supports multi processing & is thus able to apply and cache your tra
 ```
 pip install git+https://github.com/raideno/cached-dataset.git
 ```
+
+## Usage
+
+```python
+from cached_dataset import DiskCachedDataset
+
+# NOTE: your usual torch dataset with transforms for which you want to cache the transformed version
+dataset = ...
+
+# NOTE: the directory were you want to cache your dataset.
+CACHING_DIRECTORY = "./cached-dataset"
+
+cached_dataset = DiskCachedDataset.load_dataset_or_cache_it(
+    dataset=dataset,
+    base_path=CACHING_DIRECTORY,
+    verbose=True
+)
+
+for sample in cached_dataset:
+    print(f"[sample-{i}]: {sample}")
+```
