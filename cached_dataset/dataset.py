@@ -56,11 +56,33 @@ class DiskCachedDataset(torch.utils.data.Dataset):
         
         if self.ids is not None:
             self.files_names = [f"{id}.{FILE_EXTENSION}" for id in self.ids]
+        else:
+            # NOTE: get all files and sort them by their numeric index
+            self.files_names = sorted(_better_listdir(self.base_path), key=lambda x: int(x.split('.')[0]))
         
     def __len__(self):
         return len(self.files_names)
+   
+    def __getitem__(self, index: int | slice):
+        if isinstance(index, slice):
+            start, stop, step = index.start or 0, index.stop or len(self.files_names), index.step or 1
+            
+            samples = []
+            
+            for i in range(start, stop, step):
+                sample = self.__getsample__(i)
+                    
+                samples.append(sample)
+            
+            return samples
+        elif isinstance(index, int):
+            sample = self.__getsample__(index)
+                        
+            return sample
+        else:
+            raise ValueError("Invalid index type. Only integers and slices are supported")
     
-    def __getitem__(self, index):
+    def __getsample__(self, index):
         file_name = self.files_names[index]
         file_path = os.path.join(self.base_path, file_name)
         
@@ -71,6 +93,7 @@ class DiskCachedDataset(torch.utils.data.Dataset):
             
         return sample
         
+    # TODO: add auto resume option in here
     @staticmethod
     def cache_dataset(dataset, base_path, indices_to_cache=None, num_workers=0, verbose=False):
         """
